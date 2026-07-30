@@ -11,14 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Corepack activates the Yarn version pinned in package.json's
-      # packageManager field. Without it the runner's bundled Yarn 1 would not
-      # understand this lockfile.
-      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: yarn
+          node-version: 22
+      # Activates the Yarn version pinned in package.json's packageManager
+      # field. Must run after setup-node, which installs its own Node (and
+      # Yarn 1) and would otherwise undo it. `cache: yarn` is omitted because
+      # setup-node would invoke Yarn 1 before corepack is available.
+      - run: corepack enable
       - run: yarn install --immutable
       - name: Type-check (renderer)
         run: yarn tsc --noEmit -p tsconfig.json

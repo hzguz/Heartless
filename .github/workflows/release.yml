@@ -32,12 +32,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      # Corepack activates the Yarn version pinned in package.json.
-      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: yarn
+          node-version: 22
+      # Must come after setup-node: that action installs its own Node, which
+      # ships Yarn 1 and would undo an earlier corepack enable. `cache: yarn`
+      # is deliberately omitted — it runs `yarn cache dir` during setup-node,
+      # before corepack exists, which fails against the pinned Yarn 4.
+      - run: corepack enable
 
       - run: yarn install --immutable
       - run: yarn test
