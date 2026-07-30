@@ -1,0 +1,72 @@
+name: Release
+
+# Builds the installers and attaches them to a GitHub Release.
+#
+# This exists partly because packaging on a local Windows machine fails without
+# elevated privileges: electron-builder downloads a signing toolchain containing
+# macOS symlinks, and Windows refuses to create those unless Developer Mode is
+# on or the shell is elevated. GitHub's windows-latest runner has the privilege,
+# so CI sidesteps the problem entirely.
+#
+# Trigger by pushing a tag (git tag v0.1.0 && git push --tags) or manually from
+# the Actions tab.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: --win
+          - os: macos-latest
+            target: --mac
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      # Corepack activates the Yarn version pinned in package.json.
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - run: yarn install --immutable
+      - run: yarn test
+      - run: yarn build
+
+      - name: Package
+        run: yarn electron-builder ${{ matrix.target }} --publish never
+        env:
+          # Builds are intentionally unsigned for v0.1.0 — see README.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.os }}
+          path: |
+            dist-builder/*.exe
+            dist-builder/*.dmg
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          draft: true
+          generate_release_notes: true

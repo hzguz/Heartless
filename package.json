@@ -1,0 +1,156 @@
+{
+  "name": "heartless",
+  "version": "0.1.0",
+  "description": "Minimalist text and Markdown editor",
+  "main": "dist-electron/main.js",
+  "author": {
+    "name": "Heartless"
+  },
+  "license": "MIT",
+  "packageManager": "yarn@4.13.0",
+  "engines": {
+    "npm": "please-use-yarn"
+  },
+  "scripts": {
+    "preinstall": "node -e \"if(process.env.npm_execpath&&process.env.npm_execpath.includes('npm')){console.error('\\nUse yarn, not npm.\\n');process.exit(1)}\"",
+    "dev": "concurrently -k -n vite,electron -c blue,magenta \"yarn dev:vite\" \"yarn dev:electron\"",
+    "dev:vite": "vite",
+    "dev:electron": "wait-on http://localhost:5173 && node scripts/patch-electron-name.mjs && tsc -p electron/tsconfig.json && cross-env NODE_ENV=development electron .",
+    "postinstall": "node scripts/patch-electron-name.mjs",
+    "build": "yarn clean && tsc -p electron/tsconfig.json && vite build",
+    "package": "yarn build && electron-builder",
+    "package:mac": "yarn build && electron-builder --mac",
+    "package:win": "yarn build && electron-builder --win",
+    "clean": "node -e \"const fs=require('fs');fs.rmSync('dist',{recursive:true,force:true});fs.rmSync('dist-electron',{recursive:true,force:true})\"",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@codemirror/commands": "^6.10.3",
+    "@codemirror/lang-css": "^6.3.1",
+    "@codemirror/lang-html": "^6.4.11",
+    "@codemirror/lang-javascript": "^6.2.5",
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/lang-markdown": "^6.5.0",
+    "@codemirror/lang-php": "^6.0.2",
+    "@codemirror/lang-xml": "^6.1.0",
+    "@codemirror/language": "^6.12.3",
+    "@codemirror/search": "^6.7.0",
+    "@codemirror/state": "^6.6.0",
+    "@codemirror/view": "^6.43.0",
+    "@lezer/highlight": "^1.2.3",
+    "@replit/codemirror-indentation-markers": "^6.5.3",
+    "@tanstack/react-virtual": "^3.13.24",
+    "@tiptap/extension-link": "^2.6.6",
+    "@tiptap/extension-placeholder": "^2.6.6",
+    "@tiptap/extension-task-item": "^2.6.6",
+    "@tiptap/extension-task-list": "^2.6.6",
+    "@tiptap/pm": "^2.6.6",
+    "@tiptap/react": "^2.6.6",
+    "@tiptap/starter-kit": "^2.6.6",
+    "framer-motion": "^11.5.4",
+    "lucide-react": "^0.451.0",
+    "mammoth": "^1.12.0",
+    "marked": "^18.0.3",
+    "pdfjs-dist": "^6.0.227",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tiptap-markdown": "^0.8.10",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "@types/react": "^18.3.10",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.0.1",
+    "cross-env": "^7.0.3",
+    "electron": "^43.2.0",
+    "electron-builder": "^25.0.5",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.8",
+    "vitest": "^2.1.9",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.heartless.app",
+    "productName": "Heartless",
+    "directories": {
+      "buildResources": "resources",
+      "output": "dist-builder"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": "dmg",
+      "icon": "resources/icon.png",
+      "fileAssociations": [
+        {
+          "ext": "md",
+          "name": "Markdown Document",
+          "description": "Markdown Document",
+          "role": "Editor",
+          "mimeType": "text/markdown"
+        },
+        {
+          "ext": "markdown",
+          "name": "Markdown Document",
+          "description": "Markdown Document",
+          "role": "Editor",
+          "mimeType": "text/markdown"
+        },
+        {
+          "ext": "txt",
+          "name": "Text Document",
+          "description": "Plain Text Document",
+          "role": "Editor",
+          "mimeType": "text/plain"
+        }
+      ]
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "resources/icon_win.png"
+    },
+    "extraResources": [
+      {
+        "from": "resources",
+        "to": ".",
+        "filter": [
+          "icon.png",
+          "icon_win.png"
+        ]
+      },
+      {
+        "from": "LICENSE",
+        "to": "LICENSE"
+      },
+      {
+        "from": "THIRD-PARTY-NOTICES.md",
+        "to": "THIRD-PARTY-NOTICES.md"
+      }
+    ],
+    "copyright": "Copyright (c) 2026 Heartless. MIT Licensed.",
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hzguz/heartless.git"
+  },
+  "homepage": "https://github.com/hzguz/heartless",
+  "bugs": {
+    "url": "https://github.com/hzguz/heartless/issues"
+  }
+}

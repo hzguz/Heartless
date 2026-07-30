@@ -1,0 +1,500 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-paper: #FFFFFF;
+  --color-surface: #F7F7F7;
+  --color-surface-2: #F0F0F0;
+  --color-subtle: #F2F2F2;
+  --color-muted: #9a9a9a;
+  --color-text: #0a0a0a;
+  --color-text-secondary: #525252;
+  --color-accent: #CE4242;
+  /* Elevation for floating surfaces (menus, popovers, context menus). */
+  --shadow-popover: 0 8px 24px rgba(0, 0, 0, 0.10);
+}
+
+html.dark {
+  --color-paper: #2A2B2A;
+  --color-surface: #303130;
+  --color-surface-2: #3A3B3A;
+  --color-subtle: #343434;
+  --color-muted: #6b6b6b;
+  --color-text: #f2f2f2;
+  --color-text-secondary: #a0a0a0;
+  --color-accent: #CE4242;
+  /* Dark surfaces need a deeper shadow to read as elevated at all. */
+  --shadow-popover: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+html.cream {
+  --color-paper: #F5EFE0;
+  --color-surface: #EFE7D2;
+  --color-surface-2: #E8DEC4;
+  --color-subtle: #E5DAB9;
+  --color-muted: #9c8d6d;
+  --color-text: #3D2F1F;
+  --color-text-secondary: #6b5a42;
+  --color-accent: #B5443A;
+  /* Warm-tinted shadow so it doesn't read as grey against the cream paper. */
+  --shadow-popover: 0 8px 24px rgba(61, 47, 31, 0.14);
+}
+
+html, html.dark, html.cream { transition: background-color 0.25s ease, color 0.25s ease; }
+
+html,
+body,
+#root {
+  height: 100%;
+  background: var(--color-paper);
+  color: var(--color-text);
+}
+
+
+body {
+  margin: 0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+
+*:not(.allow-shadow) {
+  box-shadow: none !important;
+}
+
+/* Global scrollbar: always occupies space. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-muted) 44%, transparent);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.app-scrollbar::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-muted) 52%, transparent);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.app-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-muted) 62%, transparent);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+
+/* Standardize all lucide icon stroke widths app-wide */
+.lucide {
+  stroke-width: 1px;
+}
+
+/* Drag region helpers for frameless windows */
+.app-drag {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Toolbar buttons: accent-tinted fills derived from the live accent token so
+   they follow custom themes instead of freezing the default red. */
+.accent-tint-active {
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+.accent-tint-hover:hover {
+  background: color-mix(in srgb, var(--color-accent) 6%, transparent);
+}
+
+/* Every placeholder in the app (markdown textareas, link inputs, rename and
+   snippet fields). Without this they fall back to the browser default grey,
+   which ignores the active theme and any custom colours. */
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-muted);
+  opacity: 1; /* Firefox dims placeholders by default */
+}
+
+/* ProseMirror editor */
+.ProseMirror {
+  outline: none;
+  caret-color: var(--color-text);
+  color: var(--color-text);
+  line-height: 1.7;
+  font-size: 16px;
+  padding-bottom: 30vh;
+  /* A single long token (URL, path, base64 blob) must not widen the whole
+     editor — without this the document grows a huge horizontal scrollbar. */
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.ProseMirror:focus {
+  outline: none;
+}
+
+
+/* Hide gapcursor entirely */
+.ProseMirror .ProseMirror-gapcursor,
+.ProseMirror .ProseMirror-gapcursor::after {
+  display: none !important;
+}
+
+/* Neutral selection color in the editor — prevents the red accent line on pill rows */
+.ProseMirror ::selection {
+  background: color-mix(in srgb, var(--color-muted) 30%, transparent);
+}
+.ProseMirror::-moz-selection {
+  background: color-mix(in srgb, var(--color-muted) 30%, transparent);
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--color-muted);
+  pointer-events: none;
+  height: 0;
+}
+
+.ProseMirror h1 {
+  font-size: 2.4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 1.6rem 0 0.6rem;
+}
+.ProseMirror h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin: 1.4rem 0 0.5rem;
+}
+.ProseMirror h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 1.2rem 0 0.4rem;
+}
+.ProseMirror p {
+  margin: 0;
+}
+.ProseMirror p + p {
+  margin-top: 0;
+}
+.ProseMirror strong {
+  font-weight: 700;
+}
+.ProseMirror em {
+  font-style: italic;
+}
+.ProseMirror s {
+  text-decoration: line-through;
+}
+/* Inline code: accent-tinted so it reads as a distinct token inside prose.
+   `--color-surface` alone is only ~3% off paper and nearly disappears. */
+.ProseMirror code,
+.heartless-markdown-preview code {
+  font-family: ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
+  background: color-mix(in srgb, var(--color-accent) 9%, transparent);
+  color: var(--color-accent);
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  font-size: 0.88em;
+  font-weight: 500;
+  /* Long inline snippets must wrap with the sentence rather than push the
+     paragraph wide. */
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Code blocks: raised panel with a left accent rule marking the gutter. */
+.ProseMirror pre,
+.heartless-markdown-preview pre {
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--color-subtle);
+  border-left: 3px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-family: ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
+  font-size: 0.88em;
+  line-height: 1.65;
+  margin: 1rem 0;
+  tab-size: 2;
+  /* Wrap instead of scrolling: nothing hides off-screen, which matters most in
+     the narrow split pane. Long lines soft-wrap (see `pre code`) rather than
+     producing a horizontal scrollbar across the whole document. */
+  overflow-x: hidden;
+}
+
+/* Inside a block the tint would stack on the panel, so reset to plain text. */
+.ProseMirror pre code,
+.heartless-markdown-preview pre code {
+  background: none;
+  color: var(--color-text);
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+  font-weight: 400;
+  /* pre-wrap keeps the source indentation while allowing long lines to wrap
+     instead of scrolling. A per-line hanging indent isn't achievable here:
+     the block is a single text node, so `text-indent` would only shift the
+     first line. The wrap marker below signals continuations instead. */
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  display: block;
+}
+
+/* Language badge in the corner of a fenced block.
+   The preview reads `data-lang`, which `markdownBlocks.ts` emits alongside
+   marked's `language-xxx` class. In the WYSIWYG editor the label is derived
+   from Tiptap's own `languageClassPrefix` class instead — Tiptap renders no
+   data attribute, and its `<pre>` attrs feed Markdown serialization, so this
+   stays a read-only styling concern that cannot alter saved files. */
+.heartless-markdown-preview pre:has(> code[data-lang]),
+.ProseMirror pre:has(> code[class*='language-']) {
+  padding-top: 30px;
+}
+.heartless-markdown-preview pre > code[data-lang]::before,
+.ProseMirror pre > code[class*='language-']::before {
+  position: absolute;
+  top: 7px;
+  right: 12px;
+  font-size: 0.85em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  pointer-events: none;
+}
+.heartless-markdown-preview pre > code[data-lang]::before {
+  content: attr(data-lang);
+}
+/* CSS cannot slice a class name, so the common languages are mapped
+   explicitly; unlisted ones simply show no badge. */
+.ProseMirror pre > code[class*='language-']::before { content: 'code'; }
+.ProseMirror pre > code.language-js::before,
+.ProseMirror pre > code.language-javascript::before { content: 'js'; }
+.ProseMirror pre > code.language-ts::before,
+.ProseMirror pre > code.language-typescript::before { content: 'ts'; }
+.ProseMirror pre > code.language-jsx::before { content: 'jsx'; }
+.ProseMirror pre > code.language-tsx::before { content: 'tsx'; }
+.ProseMirror pre > code.language-json::before { content: 'json'; }
+.ProseMirror pre > code.language-html::before { content: 'html'; }
+.ProseMirror pre > code.language-css::before { content: 'css'; }
+.ProseMirror pre > code.language-scss::before { content: 'scss'; }
+.ProseMirror pre > code.language-py::before,
+.ProseMirror pre > code.language-python::before { content: 'python'; }
+.ProseMirror pre > code.language-rs::before,
+.ProseMirror pre > code.language-rust::before { content: 'rust'; }
+.ProseMirror pre > code.language-go::before { content: 'go'; }
+.ProseMirror pre > code.language-java::before { content: 'java'; }
+.ProseMirror pre > code.language-php::before { content: 'php'; }
+.ProseMirror pre > code.language-sh::before,
+.ProseMirror pre > code.language-bash::before,
+.ProseMirror pre > code.language-shell::before { content: 'shell'; }
+.ProseMirror pre > code.language-sql::before { content: 'sql'; }
+.ProseMirror pre > code.language-yaml::before,
+.ProseMirror pre > code.language-yml::before { content: 'yaml'; }
+.ProseMirror pre > code.language-md::before,
+.ProseMirror pre > code.language-markdown::before { content: 'md'; }
+.ProseMirror blockquote {
+  border-left: 3px solid var(--color-subtle);
+  padding-left: 14px;
+  color: var(--color-text-secondary);
+  margin: 0.9rem 0;
+}
+.ProseMirror hr {
+  border: none;
+  border-top: 1px solid var(--color-subtle);
+  margin: 1.6rem 0;
+}
+.ProseMirror a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.6rem;
+  margin: 0.6rem 0;
+}
+.ProseMirror ul {
+  list-style: disc;
+}
+.ProseMirror ol {
+  list-style: decimal;
+}
+.ProseMirror ul[data-type='taskList'] {
+  list-style: none;
+  padding-left: 0;
+}
+.ProseMirror ul[data-type='taskList'] li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0.25rem 0;
+}
+.ProseMirror ul[data-type='taskList'] li > label {
+  display: flex;
+  align-items: center;
+  height: calc(1em * 1.7); /* match line-height of the paragraph */
+  flex-shrink: 0;
+}
+.ProseMirror ul[data-type='taskList'] li > label input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1.5px solid var(--color-subtle);
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+  display: block;
+  flex-shrink: 0;
+  position: relative;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.ProseMirror ul[data-type='taskList'] li > label input[type='checkbox']:hover {
+  border-color: var(--color-muted);
+}
+.ProseMirror ul[data-type='taskList'] li > label input[type='checkbox']:checked {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+.ProseMirror ul[data-type='taskList'] li > label input[type='checkbox']:checked::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 1px;
+  width: 5px;
+  height: 8px;
+  /* Checkmark sits on the accent-filled box — paper is the theme's contrast
+     surface, so this stays legible under custom accents. */
+  border: 1.5px solid var(--color-paper);
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+  display: block;
+}
+.ProseMirror ul[data-type='taskList'] li > div {
+  flex: 1;
+}
+.ProseMirror ul[data-type='taskList'] li[data-checked='true'] > div {
+  color: var(--color-muted);
+  text-decoration: line-through;
+}
+
+.heartless-markdown-preview {
+  padding-bottom: 0;
+  pointer-events: auto;
+}
+
+.heartless-markdown-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.9rem 0;
+  font-size: 0.95em;
+  /* Fixed layout + wrapping cells keep a many-column table inside the pane
+     instead of stretching the document. */
+  table-layout: fixed;
+}
+
+.heartless-markdown-preview td,
+.heartless-markdown-preview th {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.heartless-markdown-preview th,
+.heartless-markdown-preview td {
+  border: 1px solid var(--color-subtle);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.heartless-markdown-preview th {
+  background: var(--color-surface);
+  font-weight: 700;
+}
+
+.heartless-markdown-preview img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+
+
+
+/* File pill nodes */
+.ProseMirror span[data-file-pill] {
+  display: inline-block;
+}
+
+/* Gap between consecutive pills */
+.ProseMirror span[data-node-view-wrapper] + span[data-node-view-wrapper] {
+  margin-left: 3px;
+}
+
+/* Selected atom node — no outline, subtle background shift only */
+.ProseMirror-selectednode {
+  outline: none !important;
+}
+
+
+/* Bubble menu */
+.bubble-menu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--color-paper);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 10px;
+  border: 1px solid var(--color-subtle);
+  white-space: nowrap;
+  width: max-content;
+  max-width: none;
+}
+.bubble-menu button {
+  padding: 6px 8px;
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.bubble-menu button:hover {
+  background: color-mix(in srgb, var(--color-accent) 6%, transparent);
+  color: var(--color-accent);
+}
+.bubble-menu button.is-active {
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  color: var(--color-accent);
+}
+.bubble-menu .divider {
+  width: 1px;
+  height: 18px;
+  background: var(--color-subtle);
+  margin: 0 2px;
+}

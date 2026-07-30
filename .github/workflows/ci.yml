@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Corepack activates the Yarn version pinned in package.json's
+      # packageManager field. Without it the runner's bundled Yarn 1 would not
+      # understand this lockfile.
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+      - run: yarn install --immutable
+      - name: Type-check (renderer)
+        run: yarn tsc --noEmit -p tsconfig.json
+      - name: Type-check (electron)
+        run: yarn tsc --noEmit -p electron/tsconfig.json
+      - name: Tests
+        run: yarn test
+      - name: Build
+        run: yarn build
