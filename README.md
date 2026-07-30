@@ -28,7 +28,7 @@ is a writing tool, not a development environment.
 
 ## Install
 
-Grab the latest build from [Releases](https://github.com/hzguz/heartless/releases).
+Grab the latest build from [Releases](https://github.com/hzguz/heartless-app/releases).
 
 ### A note on the security warning
 

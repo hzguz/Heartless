@@ -147,10 +147,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hzguz/heartless.git"
+    "url": "https://github.com/hzguz/heartless-app.git"
   },
-  "homepage": "https://github.com/hzguz/heartless",
+  "homepage": "https://github.com/hzguz/heartless-app",
   "bugs": {
-    "url": "https://github.com/hzguz/heartless/issues"
+    "url": "https://github.com/hzguz/heartless-app/issues"
   }
 }
