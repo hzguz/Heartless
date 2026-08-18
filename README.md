@@ -32,7 +32,8 @@ Grab the latest build from [Releases](https://github.com/hzguz/heartless-app/rel
 
 ### A note on the security warning
 
-The installers are **not code-signed**, so your OS will warn you the first time:
+The installers carry no paid signing certificate and are **not notarized**, so
+your OS will warn you the first time:
 
 - **Windows** — SmartScreen shows *"Windows protected your PC"*.
   Click **More info** → **Run anyway**.
@@ -40,10 +41,30 @@ The installers are **not code-signed**, so your OS will warn you the first time:
   cannot be verified"*. Right-click the app → **Open**, then confirm. Or:
   **System Settings → Privacy & Security → Open Anyway**.
 
-This is expected for an unsigned independent build — not a sign of anything
-malicious. Signing certificates cost a few hundred dollars a year, which is hard
-to justify for a project given away for free. If you'd rather not trust a binary,
+This is expected for an independent build without a paid certificate — not a
+sign of anything malicious. A Developer ID costs $99/year, which is hard to
+justify for a project given away for free. If you'd rather not trust a binary,
 build it yourself from source (below) — that is exactly why the code is MIT.
+
+#### macOS says *"Heartless is damaged and can't be opened"*
+
+This affects **v0.1.0 only**. That build shipped with no code signature at all,
+and macOS will not launch an unsigned app bundle downloaded from the web — it
+reports the failure with this misleading wording, but the download is not
+actually corrupt. Later builds are ad-hoc signed and show the ordinary
+unidentified-developer warning above, which right-click → **Open** gets past.
+
+To open a v0.1.0 install, drag the app to Applications, then clear the
+quarantine flag the browser attached to it:
+
+```bash
+xattr -cr /Applications/Heartless.app
+```
+
+#### Apple Silicon and Intel
+
+Releases from v0.1.1 ship a separate `.dmg` per architecture: `-arm64` for
+Apple Silicon and `-x64` for Intel. v0.1.0 was Apple Silicon only.
 
 ## Building from source
 

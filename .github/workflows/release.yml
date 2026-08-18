@@ -48,7 +48,12 @@ jobs:
       - name: Package
         run: yarn electron-builder ${{ matrix.target }} --publish never
         env:
-          # Builds are intentionally unsigned for v0.1.0 — see README.
+          # No Developer ID certificate is available, so electron-builder must
+          # not go looking for one. It then skips signing entirely, which is
+          # what shipped v0.1.0 unsigned and produced the "app is damaged"
+          # Gatekeeper error on Apple Silicon. The scripts/adhoc-sign-mac.mjs
+          # afterSign hook ad-hoc signs the bundle instead. Still not notarized,
+          # so Gatekeeper shows the ordinary unidentified-developer prompt.
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - uses: actions/upload-artifact@v4
