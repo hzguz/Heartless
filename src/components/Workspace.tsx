@@ -332,7 +332,9 @@ function RichWorkspace({ tab, onEditorReady }: Props) {
         linkify: true,
         breaks: true,
         transformPastedText: true,
-        transformCopiedText: true,
+        // Use Tiptap's plain-text clipboard serializer to preserve line breaks
+        // without exposing Markdown hard-break escapes in other applications.
+        transformCopiedText: false,
       }),
       SmartEnter,
       FilePill.extend({
