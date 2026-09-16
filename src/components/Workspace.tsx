@@ -314,6 +314,11 @@ function RichWorkspace({ tab, onEditorReady }: Props) {
   // Single Tiptap editor — always mounted, never destroyed on view mode change
   const editor = useEditor({
     immediatelyRender: false,
+    coreExtensionOptions: {
+      // Paragraphs have no visual gap in this editor; don't add a blank line
+      // when their plain text is pasted into chat applications.
+      clipboardTextSerializer: { blockSeparator: '\n' },
+    },
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4, 5, 6] },
