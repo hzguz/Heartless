@@ -188,8 +188,14 @@ textarea::placeholder {
 .ProseMirror p {
   margin: 0;
 }
-.ProseMirror p + p {
-  margin-top: 0;
+/* A paragraph boundary is a blank line in the Markdown source ("\n\n"), so it
+   renders as exactly one blank line — the same thing the raw textarea shows.
+   A single Enter is a hard break and stays on the next line with no gap.
+   The virtual preview renders each block in its own wrapper, so adjacency is
+   flagged by VirtualMarkdownPreview instead of matched with `p + p`. */
+.ProseMirror p + p,
+.heartless-markdown-preview.follows-paragraph > p:first-child {
+  margin-top: 1lh;
 }
 .ProseMirror strong {
   font-weight: 700;
@@ -222,8 +228,7 @@ textarea::placeholder {
 .heartless-markdown-preview pre {
   position: relative;
   background: var(--color-surface);
-  border: 1px solid var(--color-subtle);
-  border-left: 3px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
   border-radius: 8px;
   padding: 14px 16px;
   font-family: ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;

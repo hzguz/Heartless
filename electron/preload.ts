@@ -123,8 +123,10 @@ const api = {
       ipcRenderer.on('window:maximize-changed', listener);
       return () => ipcRenderer.removeListener('window:maximize-changed', listener);
     },
-    setOverlay: (theme: 'light' | 'dark' | 'cream'): Promise<boolean> =>
-      ipcRenderer.invoke('window:setOverlay', theme),
+    setOverlay: (
+      theme: 'light' | 'dark' | 'cream',
+      custom?: { color?: string; symbolColor?: string },
+    ): Promise<boolean> => ipcRenderer.invoke('window:setOverlay', theme, custom),
   },
 
   theme: {

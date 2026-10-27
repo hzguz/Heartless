@@ -39,6 +39,14 @@ function isSafeExternalUrl(url: string): boolean {
   }
 }
 
+// Custom-theme colours for the Windows caption buttons arrive from the
+// renderer; only plain #RRGGBB reaches setTitleBarOverlay.
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
+function hexColorOrNull(value: unknown): string | null {
+  return typeof value === 'string' && HEX_COLOR.test(value) ? value : null;
+}
+
 function openExternalIfSafe(url: string): void {
   if (!isSafeExternalUrl(url)) {
     debugLog('Blocked external open for unsafe URL', url);
@@ -255,7 +263,7 @@ function bootApp(): void {
       win.webContents.send('theme:systemChanged', nativeTheme.shouldUseDarkColors ? 'dark' : 'light');
     });
 
-    ipcMain.handle('window:setOverlay', (_e, theme: 'light' | 'dark' | 'cream') => {
+    ipcMain.handle('window:setOverlay', (_e, theme: 'light' | 'dark' | 'cream', custom?: { color?: unknown; symbolColor?: unknown }) => {
       if (process.platform !== 'win32') return false;
       const win = mainWindow;
       if (!win) return false;
@@ -264,7 +272,11 @@ function bootApp(): void {
         dark:  { color: '#2A2B2A', symbolColor: '#f2f2f2' },
         cream: { color: '#F5EFE0', symbolColor: '#3D2F1F' },
       };
-      const { color, symbolColor } = palettes[theme] ?? palettes.light;
+      const palette = palettes[theme] ?? palettes.light;
+      // A custom theme paints the caption buttons with its own paper/text colours;
+      // anything missing or malformed falls back to the base theme's palette.
+      const color = hexColorOrNull(custom?.color) ?? palette.color;
+      const symbolColor = hexColorOrNull(custom?.symbolColor) ?? palette.symbolColor;
       try {
         win.setTitleBarOverlay({ color, symbolColor, height: 40 });
         return true;

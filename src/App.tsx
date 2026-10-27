@@ -28,6 +28,7 @@ import {
 import type { PersistedSession, Tab } from './types';
 import { isLargeContent } from './lib/largeFiles';
 import { isCodeFile, detectLanguage } from './lib/languageDetect';
+import { isLegacyCustomTheme, parseCustomTheme } from './lib/customTheme';
 
 export default function App() {
   const { initialize, getActive } = useTabsStore();
@@ -82,16 +83,16 @@ export default function App() {
       setSystemTheme(systemTheme);
       const persistedPref = session?.themePref
         ?? (session?.theme === 'dark' || session?.theme === 'light' || session?.theme === 'cream' ? session.theme : 'system');
-      setThemePref(persistedPref);
+      // The custom theme must be in the store before the preference is applied,
+      // since selecting 'custom' paints from it.
+      const legacySide = persistedPref === 'dark' || (persistedPref === 'system' && systemTheme === 'dark') ? 'dark' : 'light';
+      const restoredCustomTheme = parseCustomTheme(session?.customTheme, legacySide);
+      if (restoredCustomTheme) setCustomTheme(restoredCustomTheme);
+      // A legacy custom theme was always painted over whatever theme was chosen;
+      // selecting 'custom' keeps the look the user had before the upgrade.
+      setThemePref(restoredCustomTheme && isLegacyCustomTheme(session?.customTheme) ? 'custom' : persistedPref);
       if (typeof session?.minimalMode === 'boolean') {
         setMinimalMode(session.minimalMode);
-      }
-      if (session?.customTheme) {
-        setCustomTheme(session.customTheme);
-        const { applyCustomTheme } = await import('./components/ThemeEditor');
-        const isDark = (session.themePref === 'dark') ||
-          (session.themePref === 'system' && systemTheme === 'dark');
-        applyCustomTheme(session.customTheme, isDark);
       }
       if (session?.language === 'en' || session?.language === 'pt' || session?.language === 'ja') {
         setLanguage(session.language);

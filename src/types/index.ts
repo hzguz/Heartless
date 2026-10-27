@@ -1,10 +1,20 @@
 export type ViewMode = 'wysiwyg' | 'split' | 'md' | 'code' | 'preview';
 export type PreviewType = 'image' | 'pdf' | 'word';
 
+/** A built-in palette; also the foundation a custom theme is painted over. */
+export type BaseTheme = 'light' | 'dark' | 'cream';
+
+/**
+ * The "Custom" theme: one palette over a base theme. The base supplies what the
+ * colour tokens can't — the `dark`/`cream` class that drives the code-editor
+ * palette, popover shadows and the native window controls.
+ * Sessions written before this shape held `{ name, light, dark }`; read them
+ * through `parseCustomTheme()`, never directly.
+ */
 export interface CustomThemeData {
   name: string;
-  light: Record<string, string>;
-  dark: Record<string, string>;
+  base: BaseTheme;
+  colors: Record<string, string>;
 }
 
 export interface Tab {
@@ -33,7 +43,7 @@ export interface PersistedTab {
 }
 
 export type Language = 'en' | 'pt' | 'ja';
-export type ThemePreference = 'system' | 'light' | 'dark' | 'cream';
+export type ThemePreference = 'system' | BaseTheme | 'custom';
 export interface PersistedSession {
   tabs: PersistedTab[];
   activeTabId: string | null;
@@ -124,7 +134,8 @@ declare global {
       window: {
         isMaximized: () => Promise<boolean>;
         onMaximizeChange: (handler: (maximized: boolean) => void) => () => void;
-        setOverlay: (theme: 'light' | 'dark' | 'cream') => Promise<boolean>;
+        /** `custom` overrides the base palette of the Windows caption buttons; main validates it. */
+        setOverlay: (theme: BaseTheme, custom?: { color?: string; symbolColor?: string }) => Promise<boolean>;
       };
       theme: {
         getSystem: () => Promise<'light' | 'dark'>;

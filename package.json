@@ -1,6 +1,6 @@
 {
   "name": "heartless",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Minimalist text and Markdown editor",
   "main": "dist-electron/main.js",
   "author": {
@@ -41,6 +41,7 @@
     "@lezer/highlight": "^1.2.3",
     "@replit/codemirror-indentation-markers": "^6.5.3",
     "@tanstack/react-virtual": "^3.13.24",
+    "@tiptap/extension-hard-break": "^2.27.2",
     "@tiptap/extension-link": "^2.6.6",
     "@tiptap/extension-placeholder": "^2.6.6",
     "@tiptap/extension-task-item": "^2.6.6",
@@ -158,10 +159,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hzguz/heartless-app.git"
+    "url": "https://github.com/hzguz/heartless.git"
   },
-  "homepage": "https://github.com/hzguz/heartless-app",
+  "homepage": "https://github.com/hzguz/heartless",
   "bugs": {
-    "url": "https://github.com/hzguz/heartless-app/issues"
+    "url": "https://github.com/hzguz/heartless/issues"
   }
 }

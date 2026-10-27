@@ -1,42 +1,15 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { EditorContent, useEditor, BubbleMenu, Extension, NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react';
+import { EditorContent, useEditor, BubbleMenu, NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react';
 import type { NodeViewProps } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Link from '@tiptap/extension-link';
-import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import { Markdown } from 'tiptap-markdown';
 import { filterEntries } from '@/lib/fileMention';
 import { FileMentionPopover } from '@/components/FileMentionPopover';
 import { useFilesStore } from '@/state/filesStore';
-
-// Enter → hard break (single newline in MD), Shift+Enter → new paragraph
-const SmartEnter = Extension.create({
-  name: 'smartEnter',
-  priority: 50, // below ListItem (100) and TaskItem so they handle Enter first
-  addKeyboardShortcuts() {
-    return {
-      Enter: ({ editor }) => {
-        const { $from } = editor.state.selection;
-        const nodeType = $from.parent.type.name;
-        if (['codeBlock', 'listItem', 'taskItem', 'heading'].includes(nodeType)) {
-          return false;
-        }
-        return editor.commands.setHardBreak();
-      },
-      'Shift-Enter': ({ editor }) => {
-        const { $from } = editor.state.selection;
-        const nodeType = $from.parent.type.name;
-        if (['codeBlock', 'listItem', 'taskItem'].includes(nodeType)) {
-          return false;
-        }
-        return editor.commands.splitBlock();
-      },
-    };
-  },
-});
 import { Bold, Italic, Strikethrough, Link as LinkIcon, Code2, Bookmark, Check, Heading1, Heading2, Heading3 } from 'lucide-react';
 import type { Editor as TEditor } from '@tiptap/react';
 import type { Tab } from '@/types';
@@ -48,6 +21,9 @@ import { CodeWorkspace } from './CodeWorkspace';
 import { PreviewWorkspace } from './PreviewWorkspace';
 import { useThemeStore } from '@/state/themeStore';
 import { FilePill } from '@/lib/filePillExtension';
+import { MarkdownHardBreak } from '@/lib/hardBreakMarkdown';
+import { SmartEnter } from '@/lib/smartEnter';
+import { TightTaskList } from '@/lib/tightTaskList';
 import { getMarkdown } from '@/lib/markdownStorage';
 import { getFileIconStyle } from '@/lib/fileIcons';
 
@@ -314,21 +290,18 @@ function RichWorkspace({ tab, onEditorReady }: Props) {
   // Single Tiptap editor — always mounted, never destroyed on view mode change
   const editor = useEditor({
     immediatelyRender: false,
-    coreExtensionOptions: {
-      // Paragraphs have no visual gap in this editor; don't add a blank line
-      // when their plain text is pasted into chat applications.
-      clipboardTextSerializer: { blockSeparator: '\n' },
-    },
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4, 5, 6] },
         codeBlock: { HTMLAttributes: { class: 'hl-codeblock' } },
         gapcursor: false,
         dropcursor: false,
+        hardBreak: false,
       }),
+      MarkdownHardBreak,
       Placeholder.configure({ placeholder: 'Start writing…' }),
       Link.configure({ openOnClick: false, autolink: true, linkOnPaste: true }),
-      TaskList,
+      TightTaskList,
       TaskItem.configure({ nested: true }),
       Markdown.configure({
         html: true,

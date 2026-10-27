@@ -34,7 +34,7 @@ inside its package under `node_modules/<name>/`.
 
 **Editor (Tiptap / ProseMirror)**
 - @tiptap/react, @tiptap/starter-kit, @tiptap/pm
-- @tiptap/extension-link, @tiptap/extension-placeholder
+- @tiptap/extension-hard-break, @tiptap/extension-link, @tiptap/extension-placeholder
 - @tiptap/extension-task-item, @tiptap/extension-task-list
 - tiptap-markdown — https://github.com/aguingand/tiptap-markdown
 

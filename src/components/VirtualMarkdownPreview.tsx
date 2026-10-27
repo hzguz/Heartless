@@ -94,6 +94,8 @@ export function VirtualMarkdownPreview({ content, className = '', scrollRatio, o
         {virtualizer.getVirtualItems().map((virtualRow) => {
           const block = blocks[virtualRow.index];
           if (!block) return null;
+          const followsParagraph =
+            block.type === 'paragraph' && blocks[virtualRow.index - 1]?.type === 'paragraph';
           return (
             <div
               key={virtualRow.key}
@@ -103,7 +105,7 @@ export function VirtualMarkdownPreview({ content, className = '', scrollRatio, o
               style={{ transform: `translateY(${virtualRow.start}px)` }}
             >
               <div
-                className="ProseMirror heartless-markdown-preview max-w-3xl w-full"
+                className={`ProseMirror heartless-markdown-preview max-w-3xl w-full ${followsParagraph ? 'follows-paragraph' : ''}`}
                 dangerouslySetInnerHTML={{ __html: renderMarkdownBlock(block) }}
               />
             </div>

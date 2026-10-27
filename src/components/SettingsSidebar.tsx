@@ -4,9 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useThemeStore } from '@/state/themeStore';
 import { useUIStore } from '@/state/uiStore';
 import { useI18nStore, useT } from '@/lib/i18n';
-import { ThemeEditor, clearCustomTheme } from './ThemeEditor';
+import { ThemeEditor } from './ThemeEditor';
 import { SidebarPanel, type SidebarSide } from './SidebarPanel';
-import type { CustomThemeData } from '@/types';
+import { Segmented, type SegmentedOption } from './Segmented';
+import { Dropdown, type DropdownOption } from './Dropdown';
 import type { Language, ThemePreference } from '@/types';
 
 function ToggleRow({
@@ -47,42 +48,6 @@ function ToggleRow({
   );
 }
 
-interface SegmentedOption<T extends string> {
-  value: T;
-  label: string;
-}
-
-function Segmented<T extends string>({
-  options, value, onChange,
-}: {
-  options: SegmentedOption<T>[];
-  value: T;
-  onChange: (v: T) => void;
-}) {
-  return (
-    <div className="flex items-center gap-0.5 rounded-[8px] border border-subtle p-0.5">
-      {options.map((opt) => {
-        const active = opt.value === value;
-        return (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => onChange(opt.value)}
-            className={
-              'flex-1 rounded-[6px] px-2 py-1 text-[11.5px] transition-colors ' +
-              (active
-                ? 'bg-surface text-text-primary'
-                : 'text-muted hover:text-text-primary')
-            }
-          >
-            {opt.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 function SettingRow({
   label, description, control,
 }: {
@@ -117,16 +82,15 @@ export function SettingsSidebar({ side }: { side: SidebarSide }) {
   const setThemePref = useThemeStore((s) => s.setThemePref);
   const minimalMode = useThemeStore((s) => s.minimalMode);
   const toggleMinimal = useThemeStore((s) => s.toggleMinimal);
-  const customTheme = useThemeStore((s) => s.customTheme);
-  const setCustomTheme = useThemeStore((s) => s.setCustomTheme);
   const language = useI18nStore((s) => s.language);
   const setLanguage = useI18nStore((s) => s.setLanguage);
 
-  const themeOptions: SegmentedOption<ThemePreference>[] = [
+  const themeOptions: DropdownOption<ThemePreference>[] = [
     { value: 'system', label: t('settings.theme.system') },
     { value: 'light',  label: t('settings.theme.light') },
     { value: 'cream',  label: t('settings.theme.cream') },
     { value: 'dark',   label: t('settings.theme.dark') },
+    { value: 'custom', label: t('settings.theme.custom') },
   ];
 
   const languageOptions: SegmentedOption<Language>[] = [
@@ -147,7 +111,14 @@ export function SettingsSidebar({ side }: { side: SidebarSide }) {
               <SectionTitle>{t('settings.appearance')}</SectionTitle>
               <SettingRow
                 label={t('settings.theme')}
-                control={<Segmented options={themeOptions} value={themePref} onChange={setThemePref} />}
+                control={
+                  <Dropdown
+                    options={themeOptions}
+                    value={themePref}
+                    onChange={setThemePref}
+                    ariaLabel={t('settings.theme')}
+                  />
+                }
               />
 
               <SectionTitle>{t('settings.language')}</SectionTitle>
@@ -190,11 +161,7 @@ export function SettingsSidebar({ side }: { side: SidebarSide }) {
                     transition={{ duration: 0.2, ease: [0.25, 0, 0, 1] }}
                     className="overflow-hidden px-3 pb-3"
                   >
-                    <ThemeEditor
-                      customTheme={customTheme}
-                      onChange={(next: CustomThemeData) => setCustomTheme(next)}
-                      onClear={() => { clearCustomTheme(); setCustomTheme(null); }}
-                    />
+                    <ThemeEditor />
                   </motion.div>
                 )}
               </AnimatePresence>
