@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useState, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EditorContent, useEditor, BubbleMenu, NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react';
 import type { NodeViewProps } from '@tiptap/react';
@@ -16,9 +16,6 @@ import type { Tab } from '@/types';
 import { useTabsStore } from '@/state/tabsStore';
 import { useSnippetsStore } from '@/state/snippetsStore';
 import { extractSelectionMd } from './SnippetsSidebar';
-import { VirtualMarkdownPreview } from './VirtualMarkdownPreview';
-import { CodeWorkspace } from './CodeWorkspace';
-import { PreviewWorkspace } from './PreviewWorkspace';
 import { useThemeStore } from '@/state/themeStore';
 import { FilePill } from '@/lib/filePillExtension';
 import { MarkdownHardBreak } from '@/lib/hardBreakMarkdown';
@@ -26,6 +23,16 @@ import { SmartEnter } from '@/lib/smartEnter';
 import { TightTaskList } from '@/lib/tightTaskList';
 import { getMarkdown } from '@/lib/markdownStorage';
 import { getFileIconStyle } from '@/lib/fileIcons';
+
+const VirtualMarkdownPreview = lazy(() =>
+  import('./VirtualMarkdownPreview').then((m) => ({ default: m.VirtualMarkdownPreview })),
+);
+const CodeWorkspace = lazy(() =>
+  import('./CodeWorkspace').then((m) => ({ default: m.CodeWorkspace })),
+);
+const PreviewWorkspace = lazy(() =>
+  import('./PreviewWorkspace').then((m) => ({ default: m.PreviewWorkspace })),
+);
 
 function FilePillView({ node }: NodeViewProps) {
   const { name, path } = node.attrs as { name: string; path: string };
@@ -67,11 +74,22 @@ type FlushWindow = Window & { __heartlessFlushActiveEditor?: () => void };
 
 export function Workspace(props: Props) {
   const minimalMode = useThemeStore((s) => s.minimalMode);
+  const { onEditorReady } = props;
+  const handleCodeReady = useCallback(() => onEditorReady(null), [onEditorReady]);
+
   if (props.tab.viewMode === 'preview') {
-    return <PreviewWorkspace tab={props.tab} />;
+    return (
+      <Suspense fallback={<div className="flex-1 bg-paper" />}>
+        <PreviewWorkspace tab={props.tab} />
+      </Suspense>
+    );
   }
   if (props.tab.viewMode === 'code' && !minimalMode) {
-    return <CodeWorkspace tab={props.tab} onEditorReady={() => props.onEditorReady(null)} />;
+    return (
+      <Suspense fallback={<div className="flex-1 bg-paper" />}>
+        <CodeWorkspace tab={props.tab} onEditorReady={handleCodeReady} />
+      </Suspense>
+    );
   }
   if (props.tab.largeFileMode) {
     return <LargeFileWorkspace {...props} />;
@@ -177,11 +195,13 @@ function LargeFileWorkspace({ tab, onEditorReady }: Props) {
   );
 
   const preview = (
-    <VirtualMarkdownPreview
-      content={previewContent}
-      scrollRatio={previewScrollRatio}
-      onScrollRatioChange={setPreviewScrollRatio}
-    />
+    <Suspense fallback={<div className="flex-1 bg-paper" />}>
+      <VirtualMarkdownPreview
+        content={previewContent}
+        scrollRatio={previewScrollRatio}
+        onScrollRatioChange={setPreviewScrollRatio}
+      />
+    </Suspense>
   );
 
   if (tab.viewMode === 'md') {
@@ -232,6 +252,8 @@ function RichWorkspace({ tab, onEditorReady }: Props) {
   const syncing = useRef<'left' | 'right' | null>(null);
   const sourceRef = useRef<'textarea' | 'wysiwyg' | null>(null);
   const syncTimer = useRef<number | null>(null);
+  const textareaSyncTimer = useRef<number | null>(null);
+  const editorDirtyFromMdRef = useRef(false);
 
   const setRichScrollElement = useCallback((el: HTMLDivElement | null) => {
     rightRef.current = el;
@@ -374,17 +396,21 @@ function RichWorkspace({ tab, onEditorReady }: Props) {
         sourceRef.current = null;
       }, CONTENT_SYNC_DELAY);
 
-      // Detect @mention trigger
-      const { from } = editor.state.selection;
-      const textBefore = editor.state.doc.textBetween(Math.max(0, from - 50), from);
-      const match = textBefore.match(/@(\S*)$/);
-      if (match && useFilesStore.getState().rootPath) {
-        try {
-          const coords = editor.view.coordsAtPos(from);
-          setMentionState({ query: match[1], top: coords.top, left: coords.left });
-        } catch { /* ignore */ }
+      // Detect @mention trigger only when a workspace folder is open
+      if (useFilesStore.getState().rootPath) {
+        const { from } = editor.state.selection;
+        const textBefore = editor.state.doc.textBetween(Math.max(0, from - 50), from);
+        const match = textBefore.match(/@(\S*)$/);
+        if (match) {
+          try {
+            const coords = editor.view.coordsAtPos(from);
+            setMentionState({ query: match[1], top: coords.top, left: coords.left });
+          } catch { /* ignore */ }
+        } else {
+          setMentionState((prev) => (prev === null ? null : null));
+        }
       } else {
-        setMentionState(null);
+        setMentionState((prev) => (prev === null ? null : null));
       }
     },
   });
@@ -395,7 +421,15 @@ function RichWorkspace({ tab, onEditorReady }: Props) {
       window.clearTimeout(syncTimer.current);
       syncTimer.current = null;
     }
-    const md = sourceRef.current === 'textarea'
+    if (textareaSyncTimer.current !== null) {
+      window.clearTimeout(textareaSyncTimer.current);
+      textareaSyncTimer.current = null;
+      sourceRef.current = 'textarea';
+      editor.commands.setContent(lastEmittedRef.current, false);
+      editorDirtyFromMdRef.current = false;
+      sourceRef.current = null;
+    }
+    const md = sourceRef.current === 'textarea' || editorDirtyFromMdRef.current
       ? lastEmittedRef.current
       : getMarkdown(editor);
     const current = useTabsStore.getState().tabs.find((candidate) => candidate.id === tab.id);
@@ -430,24 +464,47 @@ function RichWorkspace({ tab, onEditorReady }: Props) {
     }
     if (tab.content !== lastEmittedRef.current) {
       lastEmittedRef.current = tab.content;
+      editorDirtyFromMdRef.current = false;
       editor.commands.setContent(tab.content, false);
     }
   }, [editor, tab.content]);
 
-  // Textarea change → push to store + editor
+  // Flush deferred raw-Markdown edits into the Tiptap editor when leaving pure MD mode
+  useEffect(() => {
+    if (!editor || editor.isDestroyed || isMd) return;
+    if (editorDirtyFromMdRef.current) {
+      editorDirtyFromMdRef.current = false;
+      sourceRef.current = 'textarea';
+      editor.commands.setContent(lastEmittedRef.current, false);
+      sourceRef.current = null;
+    }
+  }, [editor, isMd]);
+
+  // Textarea change → push to store, and defer/debounce ProseMirror re-parsing
   const handleTextareaChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const val = e.target.value;
       lastEmittedRef.current = val;
-      sourceRef.current = 'textarea';
       isInternalUpdate.current = true;
       updateContent(tab.id, val);
-      if (editor && !editor.isDestroyed) {
-        editor.commands.setContent(val, false);
+      if (isMd) {
+        editorDirtyFromMdRef.current = true;
+        return;
       }
-      sourceRef.current = null;
+      if (textareaSyncTimer.current !== null) {
+        window.clearTimeout(textareaSyncTimer.current);
+      }
+      textareaSyncTimer.current = window.setTimeout(() => {
+        textareaSyncTimer.current = null;
+        if (editor && !editor.isDestroyed) {
+          sourceRef.current = 'textarea';
+          editor.commands.setContent(val, false);
+          editorDirtyFromMdRef.current = false;
+          sourceRef.current = null;
+        }
+      }, CONTENT_SYNC_DELAY);
     },
-    [tab.id, updateContent, editor],
+    [tab.id, updateContent, editor, isMd],
   );
 
   // Save snippet from selection

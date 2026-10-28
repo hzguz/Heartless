@@ -47,7 +47,7 @@ function TBtn({ onMouseDown, active, title, children }: BtnProps) {
 }
 
 export function FormatToolbar({ editor }: Props) {
-  const isCode = useTabsStore((s) => s.getActive()?.viewMode === 'code');
+  const isCode = useTabsStore((s) => s.tabs.find((t) => t.id === s.activeTabId)?.viewMode === 'code');
   const disabled = !editor;
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkValue, setLinkValue] = useState('');

@@ -200,7 +200,11 @@ function SnippetCard({
 
 export function SnippetsSidebar({ editor, side }: Props) {
   const t = useT();
-  const { list, create, remove, rename, read } = useSnippetsStore();
+  const list = useSnippetsStore((s) => s.list);
+  const create = useSnippetsStore((s) => s.create);
+  const remove = useSnippetsStore((s) => s.remove);
+  const rename = useSnippetsStore((s) => s.rename);
+  const read = useSnippetsStore((s) => s.read);
   const open = useUIStore((s) => s.activePanel === 'snippets');
   const getActive = useTabsStore((s) => s.getActive);
 
@@ -213,30 +217,36 @@ export function SnippetsSidebar({ editor, side }: Props) {
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!editor) { setHasSelection(false); return; }
+    if (!editor || !open) { setHasSelection(false); return; }
     const update = (): void => {
       const { from, to } = editor.state.selection;
       setHasSelection(from !== to);
     };
     update();
     editor.on('selectionUpdate', update);
-    editor.on('transaction', update);
     return () => {
       editor.off('selectionUpdate', update);
-      editor.off('transaction', update);
     };
-  }, [editor]);
+  }, [editor, open]);
 
   useEffect(() => {
-    list.forEach((s) => {
-      if (bodies[s.id] === undefined) {
-        void read(s.id).then((body) => {
-          setBodies((p) => ({ ...p, [s.id]: body }));
-        });
-      }
+    if (!open) return;
+    const missing = list.filter((s) => bodies[s.id] === undefined);
+    if (missing.length === 0) return;
+    let cancelled = false;
+    void Promise.all(
+      missing.map(async (s) => ({ id: s.id, body: await read(s.id) })),
+    ).then((loaded) => {
+      if (cancelled) return;
+      setBodies((prev) => {
+        const next = { ...prev };
+        for (const item of loaded) next[item.id] = item.body;
+        return next;
+      });
     });
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [list]);
+  }, [list, open]);
 
   const loadBody = async (id: string) => {
     if (bodies[id] !== undefined) return bodies[id];

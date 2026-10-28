@@ -20,7 +20,7 @@ export interface DirEntry {
 }
 
 const api = {
-  platform: (): Promise<NodeJS.Platform> => ipcRenderer.invoke('platform:get'),
+  platform: (): Promise<NodeJS.Platform> => Promise.resolve(process.platform),
 
   session: {
     load: (): Promise<unknown> => ipcRenderer.invoke('session:load'),

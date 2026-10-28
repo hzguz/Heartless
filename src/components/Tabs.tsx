@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 import { useTabsStore } from '@/state/tabsStore';
 const TAB_W = 148;
 const GAP = 4;
@@ -8,7 +9,14 @@ const PEEK = 56;
 const DRAG_THRESHOLD = 4;
 
 export function Tabs() {
-  const { tabs, activeTabId, setActive, closeTab, createTab, setTitle } = useTabsStore();
+  const tabs = useTabsStore(
+    useShallow((s) => s.tabs.map((t) => ({ id: t.id, title: t.title, isDirty: t.isDirty }))),
+  );
+  const activeTabId = useTabsStore((s) => s.activeTabId);
+  const setActive = useTabsStore((s) => s.setActive);
+  const closeTab = useTabsStore((s) => s.closeTab);
+  const createTab = useTabsStore((s) => s.createTab);
+  const setTitle = useTabsStore((s) => s.setTitle);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');

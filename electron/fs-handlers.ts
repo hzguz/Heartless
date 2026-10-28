@@ -2,7 +2,6 @@ import { dialog, IpcMain, BrowserWindow, shell, clipboard } from 'electron';
 import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import path from 'node:path';
-import mammoth from 'mammoth';
 
 type GetWindow = () => BrowserWindow | null;
 
@@ -247,6 +246,7 @@ export function registerFsHandlers(ipcMain: IpcMain, getWindow: GetWindow): void
 
   ipcMain.handle('files:docxToHtml', async (_e, filePath: string) => {
     try {
+      const mammoth = await import('mammoth');
       const result = await mammoth.convertToHtml({ path: filePath });
       return result.value;
     } catch {

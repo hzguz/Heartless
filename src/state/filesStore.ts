@@ -72,7 +72,11 @@ export const useFilesStore = create<FilesState>((set, get) => ({
   refresh: async () => {
     const { rootPath, expanded } = get();
     if (!rootPath) return;
-    const rootEntries = await window.heartless.dir.read(rootPath);
+    const ordered = Object.keys(expanded).sort((a, b) => a.length - b.length);
+    const [rootEntries, ...childLists] = await Promise.all([
+      window.heartless.dir.read(rootPath),
+      ...ordered.map((dirPath) => window.heartless.dir.read(dirPath)),
+    ]);
     const newExpanded: Record<string, DirEntry[]> = {};
     const reachable = new Set<string>();
 
@@ -83,12 +87,11 @@ export const useFilesStore = create<FilesState>((set, get) => ({
     };
     collect(rootEntries);
 
-    // Re-read every still-expanded directory whose parent is reachable.
-    const ordered = Object.keys(expanded).sort((a, b) => a.length - b.length);
-    for (const dirPath of ordered) {
+    // Keep only still-expanded directories whose parent remains reachable.
+    for (let i = 0; i < ordered.length; i += 1) {
+      const dirPath = ordered[i];
       if (!reachable.has(dirPath)) continue;
-      // eslint-disable-next-line no-await-in-loop
-      const children = await window.heartless.dir.read(dirPath);
+      const children = childLists[i];
       newExpanded[dirPath] = children;
       collect(children);
     }
@@ -101,15 +104,16 @@ export const useFilesStore = create<FilesState>((set, get) => ({
       set({ rootPath: null, rootEntries: [], expanded: {} });
       return;
     }
-    const rootEntries = await window.heartless.dir.read(rootPath);
-    set({ rootPath, rootEntries, expanded: {}, loading: false });
-
-    // Re-expand persisted dirs, deepest-last so parents exist first.
-    const ordered = [...expanded].sort((a, b) => a.length - b.length);
-    for (const dirPath of ordered) {
-      // eslint-disable-next-line no-await-in-loop
-      await get().expandDir(dirPath);
-    }
+    const ordered = Array.from(new Set(expanded)).sort((a, b) => a.length - b.length);
+    const [rootEntries, ...childLists] = await Promise.all([
+      window.heartless.dir.read(rootPath),
+      ...ordered.map((dirPath) => window.heartless.dir.read(dirPath)),
+    ]);
+    const expandedMap: Record<string, DirEntry[]> = {};
+    ordered.forEach((dirPath, index) => {
+      expandedMap[dirPath] = childLists[index];
+    });
+    set({ rootPath, rootEntries, expanded: expandedMap, loading: false });
   },
 
   serializeExpanded: () => Object.keys(get().expanded),

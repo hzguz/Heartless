@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 :root {
+  color-scheme: light;
   --color-paper: #FFFFFF;
   --color-surface: #F7F7F7;
   --color-surface-2: #F0F0F0;
@@ -15,7 +16,23 @@
   --shadow-popover: 0 8px 24px rgba(0, 0, 0, 0.10);
 }
 
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.cream) {
+    color-scheme: dark;
+    --color-paper: #2A2B2A;
+    --color-surface: #303130;
+    --color-surface-2: #3A3B3A;
+    --color-subtle: #343434;
+    --color-muted: #6b6b6b;
+    --color-text: #f2f2f2;
+    --color-text-secondary: #a0a0a0;
+    --color-accent: #CE4242;
+    --shadow-popover: 0 8px 24px rgba(0, 0, 0, 0.45);
+  }
+}
+
 html.dark {
+  color-scheme: dark;
   --color-paper: #2A2B2A;
   --color-surface: #303130;
   --color-surface-2: #3A3B3A;

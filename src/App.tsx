@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import { TitleBar } from './components/TitleBar';
 import { Workspace } from './components/Workspace';
@@ -7,7 +7,7 @@ import { FileExplorerSidebar } from './components/FileExplorerSidebar';
 import { SettingsSidebar } from './components/SettingsSidebar';
 import { ActivityBar } from './components/ActivityBar';
 import { StatusBar } from './components/StatusBar';
-import { useTabsStore, emptyTab } from './state/tabsStore';
+import { useTabsStore } from './state/tabsStore';
 import { useSnippetsStore } from './state/snippetsStore';
 import { useFilesStore } from './state/filesStore';
 import { useUIStore } from './state/uiStore';
@@ -31,7 +31,8 @@ import { isCodeFile, detectLanguage } from './lib/languageDetect';
 import { isLegacyCustomTheme, parseCustomTheme } from './lib/customTheme';
 
 export default function App() {
-  const { initialize, getActive } = useTabsStore();
+  const initialize = useTabsStore((s) => s.initialize);
+  const active = useTabsStore((s) => s.tabs.find((t) => t.id === s.activeTabId) ?? null);
   const refreshSnippets = useSnippetsStore((s) => s.refresh);
   const setActivePanel = useUIStore((s) => s.setActivePanel);
   const activePanel = useUIStore((s) => s.activePanel);
@@ -48,12 +49,20 @@ export default function App() {
   const [ready, setReady] = useState(false);
   const [isMac, setIsMac] = useState(false);
   const editorRef = useRef<Editor | null>(null);
+  const lastSavedSessionJsonRef = useRef<string>('');
+
+  const handleEditorReady = useCallback((editor: Editor | null) => {
+    editorRef.current = editor;
+  }, []);
 
   useEffect(() => {
     (async () => {
-      const platform = await getPlatform();
+      const [platform, session, systemTheme] = await Promise.all([
+        getPlatform(),
+        window.heartless.session.load() as Promise<PersistedSession | null>,
+        window.heartless.theme.getSystem(),
+      ]);
       setIsMac(platform === 'darwin');
-      const session = (await window.heartless.session.load()) as PersistedSession | null;
       if (session && session.tabs && session.tabs.length > 0) {
         const hydrated: Tab[] = session.tabs.map((t) => {
           const largeFileMode = t.largeFileMode || isLargeContent(t.content);
@@ -76,10 +85,7 @@ export default function App() {
         initialize(hydrated, session.activeTabId);
         if (session.snippetsOpen) setActivePanel('snippets');
         else if (session.activePanel) setActivePanel(session.activePanel);
-      } else {
-        initialize([emptyTab()], null);
       }
-      const systemTheme = await window.heartless.theme.getSystem();
       setSystemTheme(systemTheme);
       const persistedPref = session?.themePref
         ?? (session?.theme === 'dark' || session?.theme === 'light' || session?.theme === 'cream' ? session.theme : 'system');
@@ -102,7 +108,7 @@ export default function App() {
         else if (navLang.startsWith('ja')) setLanguage('ja');
         else setLanguage('en');
       }
-      await refreshSnippets();
+      void refreshSnippets();
       if (session?.filesRootPath) {
         void useFilesStore
           .getState()
@@ -117,6 +123,7 @@ export default function App() {
     const handler = () => {
       (window as Window & { __heartlessFlushActiveEditor?: () => void }).__heartlessFlushActiveEditor?.();
       const tabsState = useTabsStore.getState();
+      const filesState = useFilesStore.getState();
       const data: PersistedSession = {
         tabs: tabsState.tabs.map((t) => ({
           id: t.id,
@@ -136,10 +143,13 @@ export default function App() {
         minimalMode,
         customTheme,
         language,
-        filesRootPath: useFilesStore.getState().rootPath,
-        filesExpanded: useFilesStore.getState().serializeExpanded(),
+        filesRootPath: filesState.rootPath,
+        filesExpanded: filesState.serializeExpanded(),
       };
-      window.heartless.session.save(data);
+      const serialized = JSON.stringify(data);
+      if (serialized === lastSavedSessionJsonRef.current) return;
+      lastSavedSessionJsonRef.current = serialized;
+      void window.heartless.session.save(data);
     };
     const interval = window.setInterval(handler, 4000);
     window.addEventListener('beforeunload', handler);
@@ -199,8 +209,6 @@ export default function App() {
     return off;
   }, [ready]);
 
-  const active = getActive();
-
   // macOS keeps its window buttons in the top-left, so the chrome moves right
   // to leave that corner to the TitleBar. Windows/Linux put theirs top-right,
   // where the rail would collide with them — there the chrome stays left.
@@ -231,7 +239,7 @@ export default function App() {
                 <Workspace
                   key={active.id}
                   tab={active}
-                  onEditorReady={(e) => { editorRef.current = e; }}
+                  onEditorReady={handleEditorReady}
                 />
               )}
             </main>

@@ -28,10 +28,23 @@ const MODE_LABELS: Record<ViewMode, string> = {
   preview: 'Preview',
 };
 
-function countWords(s: string): number {
-  const t = s.trim();
-  if (!t) return 0;
-  return t.split(/\s+/).length;
+export function countWords(s: string): number {
+  let count = 0;
+  let inWord = false;
+  for (let i = 0; i < s.length; i += 1) {
+    const code = s.charCodeAt(i);
+    // ASCII whitespace: space (32), tab (9), LF (10), VT (11), FF (12), CR (13), or NBSP (160)
+    const isSpace = code === 32 || (code >= 9 && code <= 13) || code === 160;
+    if (!isSpace) {
+      if (!inWord) {
+        count += 1;
+        inWord = true;
+      }
+    } else {
+      inWord = false;
+    }
+  }
+  return count;
 }
 
 export function StatusBar({ active }: Props) {

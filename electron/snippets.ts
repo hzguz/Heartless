@@ -26,29 +26,38 @@ function manifestPath(): string {
   return path.join(vaultRoot(), 'manifest.json');
 }
 
+let vaultInitialized = false;
+let cachedManifest: Manifest | null = null;
+
 async function ensureVault(): Promise<void> {
+  if (vaultInitialized) return;
   await fs.mkdir(contentDir(), { recursive: true });
   try {
     await fs.access(manifestPath());
   } catch {
     const empty: Manifest = { version: 1, snippets: [] };
     await fs.writeFile(manifestPath(), JSON.stringify(empty, null, 2), 'utf-8');
+    cachedManifest = empty;
   }
+  vaultInitialized = true;
 }
 
 async function readManifest(): Promise<Manifest> {
+  if (cachedManifest) return cachedManifest;
   await ensureVault();
   const raw = await fs.readFile(manifestPath(), 'utf-8');
   try {
     const parsed = JSON.parse(raw) as Manifest;
-    if (!parsed.snippets) return { version: 1, snippets: [] };
-    return parsed;
+    cachedManifest = parsed.snippets ? parsed : { version: 1, snippets: [] };
+    return cachedManifest;
   } catch {
-    return { version: 1, snippets: [] };
+    cachedManifest = { version: 1, snippets: [] };
+    return cachedManifest;
   }
 }
 
 async function writeManifest(m: Manifest): Promise<void> {
+  cachedManifest = m;
   await fs.writeFile(manifestPath(), JSON.stringify(m, null, 2), 'utf-8');
 }
 

@@ -23,9 +23,8 @@ const TEXT_VAR = '--color-text';
 
 function applyTheme(t: Theme, customColors?: Record<string, string>): void {
   const root = document.documentElement;
-  root.classList.remove('dark', 'cream');
-  if (t === 'dark') root.classList.add('dark');
-  else if (t === 'cream') root.classList.add('cream');
+  root.classList.remove('light', 'dark', 'cream');
+  root.classList.add(t);
   // Update native window controls (Windows) so they don't look out of place —
   // with a custom theme they must follow its paper/text, not the base palette.
   const overlay = customColors
@@ -39,10 +38,15 @@ function resolve(pref: Exclude<ThemePreference, 'custom'>, systemTheme: Theme): 
   return pref;
 }
 
+const initialSystemTheme: Theme =
+  typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light';
+
 export const useThemeStore = create<ThemeState>((set, get) => ({
-  theme: 'light',
+  theme: initialSystemTheme,
   themePref: 'system',
-  systemTheme: 'light',
+  systemTheme: initialSystemTheme,
   minimalMode: false,
   customTheme: null,
 

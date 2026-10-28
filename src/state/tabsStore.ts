@@ -33,9 +33,11 @@ export function emptyTab(overrides: Partial<Tab> = {}): Tab {
   };
 }
 
+const initialBlankTab = emptyTab();
+
 export const useTabsStore = create<TabsState>((set, get) => ({
-  tabs: [],
-  activeTabId: null,
+  tabs: [initialBlankTab],
+  activeTabId: initialBlankTab.id,
 
   initialize: (tabs, activeTabId) => {
     if (tabs.length === 0) {

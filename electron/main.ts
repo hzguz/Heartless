@@ -101,22 +101,36 @@ function sessionFilePath(): string {
   return path.join(app.getPath('userData'), 'session.json');
 }
 
-function loadSession(): unknown {
-  try {
-    const raw = fs.readFileSync(sessionFilePath(), 'utf-8');
-    return JSON.parse(raw);
-  } catch {
-    return null;
+let sessionDirReady = false;
+let pendingSessionWrite: Promise<void> = Promise.resolve();
+let cachedSessionPromise: Promise<unknown> | null = null;
+
+function loadSession(): Promise<unknown> {
+  if (!cachedSessionPromise) {
+    cachedSessionPromise = fs.promises
+      .readFile(sessionFilePath(), 'utf-8')
+      .then((raw) => JSON.parse(raw))
+      .catch(() => null);
   }
+  return cachedSessionPromise;
 }
 
-function saveSession(data: unknown): void {
-  try {
-    fs.mkdirSync(path.dirname(sessionFilePath()), { recursive: true });
-    fs.writeFileSync(sessionFilePath(), JSON.stringify(data, null, 2), 'utf-8');
-  } catch {
-    // ignore
-  }
+function saveSession(data: unknown): Promise<void> {
+  cachedSessionPromise = Promise.resolve(data);
+  const filePath = sessionFilePath();
+  const payload = JSON.stringify(data);
+  pendingSessionWrite = pendingSessionWrite
+    .then(async () => {
+      if (!sessionDirReady) {
+        await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+        sessionDirReady = true;
+      }
+      await fs.promises.writeFile(filePath, payload, 'utf-8');
+    })
+    .catch(() => {
+      // ignore write errors
+    });
+  return pendingSessionWrite;
 }
 
 function iconPath(): string {
@@ -130,13 +144,17 @@ function iconPath(): string {
 
 function createWindow(): void {
   debugLog('Creating main window', { isDev });
+  const initialDark = nativeTheme.shouldUseDarkColors;
+  const initialBg = initialDark ? '#2A2B2A' : '#ffffff';
+  const initialFg = initialDark ? '#f2f2f2' : '#0a0a0a';
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 550,
     minHeight: 400,
     title: 'Heartless',
-    backgroundColor: '#ffffff',
+    backgroundColor: initialBg,
     icon: iconPath(),
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     trafficLightPosition: { x: 18, y: 18 },
@@ -145,8 +163,8 @@ function createWindow(): void {
           frame: false,
           titleBarStyle: 'hidden' as const,
           titleBarOverlay: {
-            color: '#ffffff',
-            symbolColor: '#0a0a0a',
+            color: initialBg,
+            symbolColor: initialFg,
             height: 40,
           },
         }
@@ -221,7 +239,12 @@ function bootApp(): void {
     openPathInApp(filePath);
   });
 
+  // Warm the session file in the background while Chromium initializes.
+  void loadSession();
+
   app.whenReady().then(() => {
+    createWindow();
+
     if (process.platform === 'darwin' && app.dock) {
       try {
         const img = nativeImage.createFromPath(iconPath());
@@ -230,7 +253,7 @@ function bootApp(): void {
     }
 
     ipcMain.handle('session:load', () => loadSession());
-    ipcMain.handle('session:save', (_e, data: unknown) => { saveSession(data); return true; });
+    ipcMain.handle('session:save', async (_e, data: unknown) => { await saveSession(data); return true; });
     ipcMain.handle('platform:get', () => process.platform);
     ipcMain.handle('shell:openExternal', (_e, url: string) => { openExternalIfSafe(url); });
 
@@ -294,8 +317,6 @@ function bootApp(): void {
     for (const filePath of filePathsFromArgv(process.argv)) {
       pendingOpenPaths.push(filePath);
     }
-
-    createWindow();
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
