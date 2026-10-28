@@ -4,6 +4,8 @@ A minimalist text and Markdown editor for macOS and Windows.
 
 No clutter. No cloud. Just text.
 
+![Heartless](banner-heartless.png)
+
 Built out of frustration with the plain-text editors that ship with an OS:
 fine for a quick note, awkward the moment you want tabs, Markdown that renders,
 or a folder open on the side. Heartless sits between those and a full IDE — it
